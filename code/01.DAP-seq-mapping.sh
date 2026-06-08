@@ -1,0 +1,4 @@
+while read id
+do
+echo "fastp -w 8 -i /mnt/may1nov1/u5009/02.dap/00.raw/good/${id}/${id}_raw_1.fq.gz -I /mnt/may1nov1/u5009/02.dap/00.raw/good/${id}/${id}_raw_2.fq.gz -o /mnt/may1nov1/u5009/02.dap/01.clean/${id}_clean1.fq.gz -O /mnt/may1nov1/u5009/02.dap/01.clean/${id}_clean2.fq.gz && bowtie2 -p 8 -x /mnt/may1nov1/u5009/01.genome/pal_hap2_final/Pal_hifi_hap2 -1 /mnt/may1nov1/u5009/02.dap/01.clean/${id}_clean1.fq.gz -2 /mnt/may1nov1/u5009/02.dap/01.clean/${id}_clean2.fq.gz | samtools sort -@ 8 -o ${id}.bam - && picard MarkDuplicates I=${id}.bam O=${id}.last.bam  M=${id}_marked_dup_metrics.txt REMOVE_DUPLICATES=true && samtools view -@ 8 -h -b -q 30 ${id}.last.bam > ${id}.q30.bam && rm -f /mnt/may1nov1/u5009/02.dap/01.clean/${id}_clean1.fq.gz  /mnt/may1nov1/u5009/02.dap/01.clean/${id}_clean2.fq.gz "
+done
