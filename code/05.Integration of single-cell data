@@ -1,0 +1,38 @@
+rm(list = ls())
+library(Seurat)
+
+xylem <- readRDS("xylem.RDS")
+phloem <- readRDS("phloem.RDS")
+ScRNA <- merge(xylem, y = phloem, add.cell.ids = c("xylem", "phloem"), project = "ScRNA")
+SnRNA <- readRDS("CCA_SnRNA.RDS")
+ScRNA$sample <- "ScRNA"
+SnRNA$sample <- "SnRNA"
+combined_list <- list(ScRNA, SnRNA)
+features <- SelectIntegrationFeatures(object.list = combined_list, nfeatures = 3000)
+peu.anchors <- FindIntegrationAnchors(object.list = combined_list, anchor.features = features)
+combined <- IntegrateData(anchorset = peu.anchors)
+DefaultAssay(combined) <- "integrated"
+g2m_genes <- read.table('./G2M.txt', header = FALSE)
+s_genes <- read.table('./S.txt', header = FALSE)
+g2m_genes_vec <- as.character(g2m_genes$V1)
+s_genes_vec <- as.character(s_genes$V1)
+g2m_genes_matched <- rownames(combined) %in% g2m_genes_vec
+s_genes_matched <- rownames(combined) %in% s_genes_vec
+combined <- CellCycleScoring(combined, s.features = rownames(combined)[s_genes_matched], g2m.features = rownames(combined)[g2m_genes_matched], set.ident = TRUE)
+combined <- ScaleData(combined, vars.to.regress = c("S.Score", "G2M.Score"))
+combined <- ScaleData(combined)
+combined <- RunPCA(combined, npcs = 30, verbose = FALSE)
+combined <- RunUMAP(combined, reduction = "pca", dims = 1:20)
+combined <- RunTSNE(combined, reduction = "pca", dims = 1:20)
+combined <- FindNeighbors(combined, reduction = "pca", dims = 1:20)
+combined <- FindClusters(combined, resolution = 0.6)
+table(Idents(combined))
+
+pdf("merge_CCA_0.6.pdf")
+DimPlot(combined, reduction = "umap", group.by = 'sample',label=T,raster=FALSE)
+DimPlot(combined, reduction = "umap", group.by = 'orig.ident',label=T,raster=FALSE)
+DimPlot(combined, reduction = "umap", group.by = "Phase")
+DimPlot(combined, reduction = "umap", label=T,raster=FALSE)
+DimPlot(combined, reduction = "tsne", label=T,raster=FALSE)
+dev.off()
+save(combined, file = "merge_CCA_0.6.RData")
